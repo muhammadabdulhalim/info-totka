@@ -1415,7 +1415,7 @@
       const sekolahList = Array.from(new Set(allPeserta.map(i => String(i.sekolah || '').toUpperCase())))
         .filter(s => s && s !== LABEL_TANPA_SEKOLAH)
         .sort((a, b) => a.localeCompare(b));
-      selectSekolah.innerHTML = '<option value="">-- Pilih Asal Sekolah --</option>';
+      selectSekolah.innerHTML = '<option value="">Pilih Asal Sekolah</option>';
       sekolahList.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
@@ -1430,9 +1430,9 @@
     selectSekolah.addEventListener('change', function() {
       const chosen = this.value;
       btnCek.disabled = true;
-      if (!chosen) { selectSiswa.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>'; selectSiswa.disabled = true; return; }
+      if (!chosen) { selectSiswa.innerHTML = '<option value="">Pilih Nama Siswa</option>'; selectSiswa.disabled = true; return; }
       filteredSiswa = allPeserta.filter(i => String(i.sekolah || '').toUpperCase() === chosen.toUpperCase()).sort((a, b) => a.nama.localeCompare(b.nama));
-      selectSiswa.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>';
+      selectSiswa.innerHTML = '<option value="">Pilih Nama Siswa</option>';
       filteredSiswa.forEach((s, idx) => {
         const opt = document.createElement('option');
         opt.value = idx; opt.textContent = String(s.nama || '').toUpperCase();
