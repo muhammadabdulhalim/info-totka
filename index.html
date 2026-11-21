@@ -4,13 +4,1321 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Informasi Ruangan Ujian - Try Out TKA SD</title>
+
+  <!-- ICON & THUMBNAIL PREVIEW LINK (OPSIONAL) -->
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Informasi Ruangan Ujian - Try Out TKA SD">
+  <meta property="og:description" content="Cek lokasi lantai, ruang ujian, kode QR presensi, dan unduh kartu peserta ujian.">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Varela+Round&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background: #e7f6ec; }
-    iframe { width: 100%; height: 100%; border: none; display: block; }
+    :root {
+      --bg-gradient: linear-gradient(135deg, #e7f6ec 0%, #f7fae8 48%, #fef9c3 100%);
+      --card-glass: rgba(255, 255, 255, 0.68);
+      --card-border: rgba(255, 255, 255, 0.85);
+      --card-border-sub: rgba(22, 163, 74, 0.22);
+      --card-shadow: 0 20px 44px rgba(20, 83, 45, 0.14), inset 0 1.5px 1px rgba(255, 255, 255, 0.9);
+      --text-heading: #14281d;
+      --text-label: #166534;
+      --text-muted: #4d7c0f;
+      --input-bg: rgba(255, 255, 255, 0.82);
+      --box-session-bg: rgba(240, 253, 244, 0.78);
+      --box-room-bg: rgba(254, 252, 232, 0.84);
+      --room-note-color: #854d0e;
+      --qr-bg: rgba(240, 253, 244, 0.72);
+      --pcard-bg: rgba(255, 255, 255, 0.78);
+      --pcard-row-bg: rgba(248, 250, 252, 0.85);
+      --pcard-cred-bg: linear-gradient(135deg, rgba(240, 253, 244, 0.92) 0%, rgba(254, 252, 232, 0.92) 100%);
+      --outline-btn-bg: rgba(255, 255, 255, 0.78);
+      --outline-btn-text: #15803d;
+      --footer-color: #3f6212;
+      --topbar-bg: rgba(255, 255, 255, 0.72);
+    }
+
+    body.dark-mode {
+      --bg-gradient: linear-gradient(135deg, #06180e 0%, #0d2618 52%, #1d1a06 100%);
+      --card-glass: rgba(14, 36, 24, 0.74);
+      --card-border: rgba(74, 222, 128, 0.3);
+      --card-border-sub: rgba(250, 204, 21, 0.24);
+      --card-shadow: 0 22px 48px rgba(0, 0, 0, 0.48), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+      --text-heading: #f0fdf4;
+      --text-label: #86efac;
+      --text-muted: #bef264;
+      --input-bg: rgba(9, 25, 16, 0.86);
+      --box-session-bg: rgba(13, 40, 24, 0.82);
+      --box-room-bg: rgba(42, 35, 9, 0.74);
+      --room-note-color: #fef08a;
+      --qr-bg: rgba(13, 40, 24, 0.78);
+      --pcard-bg: rgba(14, 36, 24, 0.82);
+      --pcard-row-bg: rgba(9, 25, 16, 0.8);
+      --pcard-cred-bg: linear-gradient(135deg, rgba(16, 48, 30, 0.92) 0%, rgba(45, 38, 10, 0.86) 100%);
+      --outline-btn-bg: rgba(14, 36, 24, 0.84);
+      --outline-btn-text: #86efac;
+      --footer-color: #bef264;
+      --topbar-bg: rgba(9, 25, 16, 0.76);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial Rounded MT Bold', 'Nunito', 'Varela Round', 'Helvetica Rounded', sans-serif;
+    }
+
+    svg { flex-shrink: 0; }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-heading);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 66px;
+      padding-bottom: 56px;
+      transition: background 0.35s ease, color 0.3s ease;
+    }
+
+    .sticky-topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 8000;
+      background: var(--topbar-bg);
+      backdrop-filter: blur(20px) saturate(185%);
+      -webkit-backdrop-filter: blur(20px) saturate(185%);
+      border-bottom: 1px solid var(--card-border);
+      box-shadow: 0 6px 20px rgba(20, 83, 45, 0.08);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .sticky-topbar-inner {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+    }
+
+    .sticky-logo-img {
+      display: none;
+      height: 38px;
+      width: auto;
+      max-width: 180px;
+      object-fit: contain;
+      margin-right: auto;
+      background: transparent !important;
+    }
+
+    .wa-floating-btn {
+      position: fixed;
+      right: 16px;
+      bottom: 54px;
+      z-index: 8600;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(20, 83, 45, 0.94) 0%, rgba(22, 163, 74, 0.92) 60%, rgba(202, 138, 4, 0.92) 100%);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 12px 28px rgba(20, 83, 45, 0.34), inset 0 1.5px 1px rgba(255, 255, 255, 0.65);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .wa-floating-btn.is-dragging {
+      cursor: grabbing;
+      transform: scale(1.1);
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.38);
+    }
+
+    .wa-floating-badge {
+      position: absolute;
+      top: -3px; right: -3px;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: #facc15;
+      border: 2px solid #14532d;
+    }
+
+    .ios-theme-switch {
+      position: relative;
+      width: 60px; height: 31px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255, 255, 255, 0.65);
+      background: linear-gradient(135deg, #fde047 0%, #22c55e 100%);
+      padding: 0 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    body.dark-mode .ios-theme-switch {
+      background: linear-gradient(135deg, #0f172a 0%, #14532d 100%);
+      border-color: rgba(134, 239, 172, 0.45);
+    }
+
+    .ios-switch-icon { width: 13px; height: 13px; color: #ffffff; z-index: 1; }
+
+    .ios-switch-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #ca8a04;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
+      transition: transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 2;
+    }
+
+    body.dark-mode .ios-switch-thumb {
+      transform: translateX(29px);
+      background: #1e293b;
+      color: #fef08a;
+    }
+
+    .ambient-bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(75px); opacity: 0.48; }
+    .orb-1 { width: 300px; height: 300px; background: #4ade80; top: -70px; left: -70px; }
+    .orb-2 { width: 280px; height: 280px; background: #facc15; bottom: 8%; right: -80px; }
+    .orb-3 { width: 240px; height: 240px; background: #22c55e; top: 44%; left: 26%; opacity: 0.28; }
+
+    .promo-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(10, 26, 17, 0.8);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: none; align-items: center; justify-content: center; padding: 18px;
+    }
+
+    .promo-wrapper { position: relative; width: auto; max-width: 92vw; display: flex; flex-direction: column; align-items: center; }
+    .promo-close-btn {
+      position: absolute; top: -14px; right: -10px; z-index: 20;
+      width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ffffff;
+      background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+      color: #fef08a; font-size: 22px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .promo-card {
+      position: relative; width: 100%; max-width: 420px;
+      background: rgba(20, 83, 45, 0.94); border: 1.5px solid rgba(254, 240, 138, 0.65);
+      border-radius: 24px; overflow: hidden; box-shadow: 0 24px 52px rgba(0, 0, 0, 0.5);
+    }
+    .promo-track { display: flex; align-items: center; transition: transform 0.38s cubic-bezier(0.25, 0.8, 0.25, 1); }
+    .promo-slide { flex: 0 0 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
+    .promo-ig-frame { width: 100%; display: flex; align-items: center; justify-content: center; }
+    .promo-ig-frame img { display: block; width: auto; height: auto; max-width: 100%; max-height: 74vh; object-fit: contain; }
+    .promo-nav {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.65); background: rgba(20, 83, 45, 0.78);
+      color: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .promo-nav.prev { left: 10px; }
+    .promo-nav.next { right: 10px; }
+    .promo-footer-bar {
+      padding: 10px 14px; background: rgba(10, 38, 20, 0.94);
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .promo-dots { display: flex; align-items: center; gap: 6px; }
+    .promo-dot { width: 8px; height: 8px; border-radius: 999px; border: none; background: rgba(255, 255, 255, 0.35); cursor: pointer; }
+    .promo-dot.active { width: 22px; background: #fef08a; }
+    .promo-skip-text { background: rgba(254, 240, 138, 0.18); border: 1px solid rgba(254, 240, 138, 0.55); color: #fef08a; font-size: 11.5px; font-weight: 700; padding: 5px 13px; border-radius: 999px; cursor: pointer; }
+
+    .inline-promo-section { margin-top: 16px; width: 100%; }
+    .inline-promo-label { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--text-label); margin-bottom: 8px; }
+    .inline-promo-card { position: relative; width: 100%; border-radius: 20px; overflow: hidden; border: 1.5px solid var(--card-border); background: rgba(20, 83, 45, 0.92); }
+
+    .photo-lightbox { position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .photo-lightbox-box { background: #0f172a; border-radius: 20px; overflow: hidden; max-width: 92vw; border: 1.5px solid rgba(255, 255, 255, 0.35); }
+    .photo-lightbox-box img { display: block; max-width: 100%; max-height: 76vh; object-fit: contain; }
+    .photo-lightbox-caption { padding: 11px 14px; color: #fef08a; font-size: 13px; font-weight: 700; text-align: center; }
+
+    #searchSection { position: relative; z-index: 1; width: 100%; max-width: 460px; padding: 14px 16px 0 16px; display: flex; flex-direction: column; }
+    .search-card {
+      background: var(--card-glass); backdrop-filter: blur(24px) saturate(190%); -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1.5px solid var(--card-border); border-bottom-color: var(--card-border-sub); border-right-color: var(--card-border-sub);
+      border-radius: 26px; overflow: hidden; box-shadow: var(--card-shadow);
+    }
+    .hero-header {
+      position: relative;
+      background: linear-gradient(135deg, rgba(20, 83, 45, 0.94) 0%, rgba(21, 128, 61, 0.88) 55%, rgba(202, 138, 4, 0.9) 100%);
+      padding: 24px 20px; text-align: center; color: #ffffff; border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+    }
+    .hero-title { font-size: 19px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .hero-subtitle { font-size: 12.5px; color: #fef9c3; }
+    .search-body { padding: 20px; }
+    .card-header-title { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 700; color: var(--text-heading); margin-bottom: 18px; }
+    .badge-icon-theme { width: 34px; height: 34px; border-radius: 11px; background: linear-gradient(135deg, rgba(220, 252, 231, 0.95) 0%, rgba(254, 249, 195, 0.95) 100%); border: 1px solid rgba(22, 163, 74, 0.25); color: #15803d; display: inline-flex; align-items: center; justify-content: center; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: var(--text-label); letter-spacing: 0.45px; margin-bottom: 7px; }
+    .select-wrapper { position: relative; }
+    .select-wrapper select {
+      width: 100%; appearance: none; -webkit-appearance: none;
+      padding: 13px 40px 13px 14px; border-radius: 15px; border: 1.5px solid var(--card-border-sub);
+      background: var(--input-bg); color: var(--text-heading); font-size: 13.5px; font-weight: 700; outline: none; cursor: pointer;
+    }
+    .select-wrapper select:disabled { opacity: 0.6; cursor: not-allowed; }
+    .select-chevron { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #22c55e; }
+    .btn-primary {
+      width: 100%; margin-top: 6px; padding: 14px 16px; border-radius: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.65);
+      background: linear-gradient(135deg, rgba(20, 83, 45, 0.95) 0%, rgba(21, 128, 61, 0.9) 55%, rgba(202, 138, 4, 0.92) 100%);
+      color: #ffffff; font-size: 14.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+    }
+    .btn-primary:disabled { background: linear-gradient(135deg, rgba(22, 101, 52, 0.45) 0%, rgba(202, 138, 4, 0.45) 100%); color: #65a30d; opacity: 0.75; cursor: not-allowed; }
+
+    #resultSection { position: relative; z-index: 1; display: none; width: 100%; max-width: 460px; padding: 14px 16px 0 16px; }
+    .result-card { background: var(--card-glass); backdrop-filter: blur(24px) saturate(190%); -webkit-backdrop-filter: blur(24px) saturate(190%); border: 1.5px solid var(--card-border); border-radius: 26px; overflow: hidden; box-shadow: var(--card-shadow); }
+    .result-banner { background: linear-gradient(135deg, rgba(20, 83, 45, 0.94) 0%, rgba(21, 128, 61, 0.88) 55%, rgba(202, 138, 4, 0.9) 100%); padding: 20px; color: #ffffff; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .verified-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(254, 240, 138, 0.94); color: #14532d; font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 999px; margin-bottom: 10px; }
+    .student-name { font-size: 18px; font-weight: 700; line-height: 1.25; text-transform: uppercase; margin-bottom: 5px; }
+    .school-name { font-size: 13px; color: #fef9c3; text-transform: uppercase; }
+    .no-peserta-box { background: rgba(20, 83, 45, 0.42); border: 1px solid rgba(255, 255, 255, 0.42); border-radius: 16px; padding: 9px 11px; text-align: right; flex-shrink: 0; max-width: 126px; }
+    .no-peserta-label { font-size: 9px; color: #fef08a; margin-bottom: 3px; }
+    .no-peserta-value { font-size: 13px; font-weight: 700; color: #ffffff; word-break: break-word; }
+    .result-body { padding: 18px 20px 20px 20px; }
+    .info-box-session { background: var(--box-session-bg); border: 1.5px solid var(--card-border); border-radius: 18px; padding: 13px 15px; display: flex; align-items: center; gap: 13px; }
+    .clock-icon-box { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, rgba(220, 252, 231, 0.9) 0%, rgba(254, 249, 195, 0.9) 100%); color: #15803d; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .session-label { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+    .session-value { font-size: 14.5px; font-weight: 700; color: var(--text-heading); }
+    .session-value .dot { color: #eab308; margin: 0 5px; }
+    .session-value .time-text { color: #22c55e; }
+    .info-box-room { margin-top: 12px; background: var(--box-room-bg); border: 1.5px solid rgba(234, 179, 8, 0.55); border-radius: 18px; padding: 15px; text-align: center; }
+    .room-label { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 10.5px; color: #eab308; margin-bottom: 6px; }
+    .room-value { font-size: 22px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px; }
+    .room-note { font-size: 11.5px; color: var(--room-note-color); }
+    .room-photo-frame { position: relative; margin-top: 13px; width: 100%; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; background: rgba(255, 255, 255, 0.35); border: 1.5px solid var(--card-border); display: flex; align-items: center; justify-content: center; }
+    .room-photo-frame.has-photo { cursor: pointer; }
+    .room-photo-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .room-photo-badge { position: absolute; top: 9px; left: 9px; background: rgba(20, 83, 45, 0.85); color: #fef08a; font-size: 9.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; z-index: 2; }
+    .room-photo-zoom-hint { position: absolute; bottom: 9px; right: 9px; background: rgba(15, 23, 42, 0.72); color: #ffffff; font-size: 10px; padding: 4px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; z-index: 2; }
+    .room-photo-placeholder { padding: 18px; text-align: center; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+    .room-photo-placeholder-icon { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, rgba(220, 252, 231, 0.9) 0%, rgba(254, 249, 195, 0.9) 100%); color: #15803d; display: flex; align-items: center; justify-content: center; }
+    .room-photo-placeholder-title { font-size: 12px; font-weight: 700; color: var(--text-label); }
+    .room-photo-placeholder-sub { font-size: 10.5px; color: var(--text-muted); }
+
+    .qr-section { margin-top: 14px; background: var(--qr-bg); border: 1.5px dashed rgba(34, 197, 94, 0.55); border-radius: 18px; padding: 16px 15px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .qr-title { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-label); text-transform: uppercase; margin-bottom: 12px; }
+    .qr-white-frame { width: 180px; height: 180px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 12px; border-radius: 16px; box-shadow: 0 8px 20px rgba(20, 83, 45, 0.14); }
+    #qrcode { width: 156px; height: 156px; display: flex; align-items: center; justify-content: center; }
+    #qrcode svg { display: block; width: 100% !important; height: 100% !important; }
+    .qr-code-text { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--text-heading); letter-spacing: 0.8px; }
+    .qr-hint { margin-top: 3px; font-size: 11px; color: var(--text-label); }
+
+    .btn-download-glass { width: 100%; margin-top: 12px; padding: 10.5px 14px; background: linear-gradient(135deg, rgba(22, 101, 52, 0.92) 0%, rgba(21, 128, 61, 0.88) 55%, rgba(202, 138, 4, 0.9) 100%); border: 1.5px solid rgba(255, 255, 255, 0.65); border-radius: 13px; color: #ffffff; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; }
+    .mid-ticker-bar { margin-top: 14px; width: 100%; background: linear-gradient(135deg, rgba(20, 83, 45, 0.92) 0%, rgba(21, 128, 61, 0.88) 55%, rgba(202, 138, 4, 0.9) 100%); border: 1.5px solid rgba(254, 240, 138, 0.6); border-radius: 14px; padding: 8px 0; display: flex; align-items: center; overflow: hidden; }
+    .mid-ticker-badge { flex-shrink: 0; margin: 0 8px 0 9px; padding: 3px 9px; border-radius: 999px; background: #fef08a; color: #14532d; font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .participant-card-box { margin-top: 14px; background: var(--pcard-bg); border: 1.5px solid rgba(34, 197, 94, 0.35); border-radius: 18px; overflow: hidden; }
+    .participant-card-header { background: linear-gradient(135deg, rgba(20, 83, 45, 0.94) 0%, rgba(22, 101, 52, 0.9) 65%, rgba(202, 138, 4, 0.92) 100%); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; }
+    .participant-card-title { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #fef08a; }
+    .participant-card-tag { font-size: 9.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); color: #ffffff; }
+    .participant-card-body { padding: 12px 14px 14px 14px; display: flex; flex-direction: column; gap: 9px; }
+    .p-card-row { background: var(--pcard-row-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 8.5px 11px; }
+    .p-card-label { font-size: 9.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2.5px; }
+    .p-card-value { font-size: 13.5px; font-weight: 700; color: var(--text-heading); line-height: 1.3; word-break: break-word; }
+    .p-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .p-card-cred { background: var(--pcard-cred-bg); border: 1px solid rgba(34, 197, 94, 0.32); border-radius: 12px; padding: 8.5px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .p-card-cred-text { min-width: 0; flex: 1; }
+    .p-card-cred-val { font-family: 'Courier New', Courier, monospace; font-size: 13.5px; font-weight: 700; color: var(--text-heading); word-break: break-all; }
+    .btn-copy-mini { flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.35); background: var(--input-bg); color: #22c55e; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .divider { border: none; border-top: 1px solid rgba(34, 197, 94, 0.16); margin: 16px 0; }
+    .btn-outline { width: 100%; padding: 12.5px; background: var(--outline-btn-bg); border: 1.5px solid var(--card-border); border-radius: 16px; font-size: 14px; font-weight: 700; color: var(--outline-btn-text); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+    .btn-dark { width: 100%; margin-top: 10px; padding: 12.5px; background: linear-gradient(135deg, rgba(20, 83, 45, 0.95) 0%, rgba(22, 101, 52, 0.92) 100%); border: 1.5px solid rgba(254, 240, 138, 0.45); border-radius: 16px; font-size: 14px; font-weight: 700; color: #fef08a; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+    .footer { position: relative; z-index: 1; text-align: center; font-size: 12px; color: var(--footer-color); padding: 20px 16px 14px 16px; margin-top: auto; }
+    .promo-ticker-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 8500; width: 100%; background: linear-gradient(135deg, rgba(20, 83, 45, 0.95) 0%, rgba(21, 128, 61, 0.92) 55%, rgba(202, 138, 4, 0.94) 100%); border-top: 1.5px solid rgba(255, 255, 255, 0.5); padding: 9px 0; display: flex; align-items: center; overflow: hidden; }
+    .ticker-badge { flex-shrink: 0; margin: 0 10px 0 12px; padding: 4px 11px; border-radius: 999px; background: rgba(254, 240, 138, 0.95); color: #14532d; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+    .ticker-viewport { flex: 1; overflow: hidden; }
+    .ticker-track { display: flex; width: max-content; animation: tickerScroll 26s linear infinite; }
+    @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .ticker-item { display: inline-flex; align-items: center; gap: 12px; padding-right: 28px; font-size: 12.5px; color: #ffffff; white-space: nowrap; }
+    .ticker-item strong { color: #fef08a; }
+    .ticker-sep { color: #fef08a; font-size: 11px; opacity: 0.85; }
+
+    @media print {
+      body { background: #ffffff !important; color: #14281d !important; padding: 0 !important; }
+      .sticky-topbar, .wa-floating-btn, .ambient-bg, #promoModal, #roomPhotoModal, #searchSection, .no-print, .footer, .promo-ticker-bar, .inline-promo-section, .mid-ticker-bar { display: none !important; }
+      #resultSection { display: block !important; padding: 0; max-width: 100%; }
+      .result-card, .participant-card-box { background: #ffffff !important; box-shadow: none; border: 2px solid #16a34a; }
+    }
   </style>
 </head>
 <body>
-  <iframe src="https://script.google.com/macros/s/AKfycbzX4PEWtI7rPLbPHzPouvygDvWYwqNfJgXcA8mMnxsp_7lmcPVZowiLGVytwbT3GkkcrQ/exec" allow="clipboard-write"></iframe>
+
+  <div class="sticky-topbar no-print">
+    <div class="sticky-topbar-inner">
+      <img id="stickyLogoImg" src="" alt="Logo" class="sticky-logo-img" onerror="this.style.display='none';">
+
+      <button type="button" id="btnThemeToggle" class="ios-theme-switch" onclick="toggleTema()" aria-label="Ganti Tema Gelap atau Terang">
+        <svg class="ios-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-15.07 7.07 1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="ios-switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        </svg>
+        <span class="ios-switch-thumb">
+          <svg id="thumbSun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-15.07 7.07 1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <svg id="thumbMoon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div id="waFloatingBtn" class="wa-floating-btn no-print" role="button" tabindex="0" aria-label="Hubungi Admin via WhatsApp" title="Geser atau klik untuk chat WhatsApp">
+    <span class="wa-floating-badge"></span>
+    <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/>
+      <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>
+    </svg>
+  </div>
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div id="promoModal" class="promo-overlay" onclick="if(event.target === this) tutupIklan()">
+    <div class="promo-wrapper">
+      <button type="button" class="promo-close-btn" onclick="tutupIklan()" aria-label="Tutup Iklan">&times;</button>
+      <div class="promo-card">
+        <div id="promoTrack" class="promo-track"></div>
+        <button type="button" id="btnPrevSlide" class="promo-nav prev" onclick="geserSlide(-1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button type="button" id="btnNextSlide" class="promo-nav next" onclick="geserSlide(1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="promo-footer-bar">
+          <div id="promoDots" class="promo-dots"></div>
+          <button type="button" class="promo-skip-text" onclick="tutupIklan()">Tutup Info</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="roomPhotoModal" class="photo-lightbox" onclick="if(event.target === this) tutupFotoRuangan()">
+    <div class="promo-wrapper">
+      <button type="button" class="promo-close-btn" onclick="tutupFotoRuangan()">&times;</button>
+      <div class="photo-lightbox-box">
+        <img id="roomPhotoModalImg" src="" alt="Foto Ruangan Ujian">
+        <div id="roomPhotoModalCaption" class="photo-lightbox-caption">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="searchSection">
+    <div class="search-card">
+      <header class="hero-header">
+        <h1 class="hero-title">INFORMASI RUANGAN UJIAN</h1>
+        <p class="hero-subtitle">Try Out Tes Kemampuan Akademik (TKA) SD</p>
+      </header>
+
+      <div class="search-body">
+        <div class="card-header-title">
+          <span class="badge-icon-theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <path d="m9 14 2 2 4-4"/>
+            </svg>
+          </span>
+          <span>Cari Data Peserta Ujian</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="selectSekolah">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 22v-4a2 2 0 1 0-4 0v4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M18 5v17"/><path d="m4 6 8-4 8 4"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></svg>
+            <span>1. PILIH ASAL SEKOLAH</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="selectSekolah" disabled><option value="">Memuat data sekolah...</option></select>
+            <svg class="select-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="selectSiswa">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+            <span>2. PILIH NAMA SISWA</span>
+          </label>
+          <div class="select-wrapper">
+            <select id="selectSiswa" disabled><option value="">-- Pilih Nama Siswa --</option></select>
+            <svg class="select-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+
+        <button type="button" id="btnCek" class="btn-primary" disabled>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="11.5" cy="14.5" r="2.5"/><path d="M13.3 16.3 15 18"/></svg>
+          <span>Cek Informasi Ruangan</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="searchInlinePromoSection" class="inline-promo-section no-print" style="display:none;">
+      <div class="inline-promo-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        <span>POSTER INFORMASI &amp; PROMO</span>
+      </div>
+      <div class="inline-promo-card">
+        <div id="searchInlinePromoTrack" class="promo-track"></div>
+        <button type="button" id="btnPrevSearchInline" class="promo-nav prev" onclick="geserSearchInlineSlide(-1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button type="button" id="btnNextSearchInline" class="promo-nav next" onclick="geserSearchInlineSlide(1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="promo-footer-bar">
+          <div id="searchInlinePromoDots" class="promo-dots"></div>
+          <span style="font-size: 11px; color: #fef9c3; cursor: pointer;" onclick="initPromoSlider()">Perbesar poster &nearr;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultSection">
+    <div class="result-card">
+      <div class="result-banner">
+        <div>
+          <div class="verified-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#14532d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>Peserta Terverifikasi</span>
+          </div>
+          <div id="resNama" class="student-name">-</div>
+          <div id="resSekolah" class="school-name">-</div>
+        </div>
+        <div class="no-peserta-box">
+          <div class="no-peserta-label">NO. PESERTA</div>
+          <div id="resNoPeserta" class="no-peserta-value">-</div>
+        </div>
+      </div>
+
+      <div class="result-body">
+        <div class="info-box-session">
+          <div class="clock-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="session-label">SESI &amp; JAM UJIAN</div>
+            <div class="session-value">
+              <span id="resSesi">-</span>
+              <span class="dot">&bull;</span>
+              <span id="resJam" class="time-text">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box-room">
+          <div class="room-label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>LOKASI LANTAI &amp; RUANGAN UJIAN</span>
+          </div>
+          <div id="resRuangan" class="room-value">-</div>
+          <div class="room-note">Harap hadir 15 menit sebelum ujian dimulai.</div>
+
+          <div id="roomPhotoFrame" class="room-photo-frame" onclick="bukaFotoRuangan()">
+            <span class="room-photo-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span>FOTO RUANGAN</span>
+            </span>
+            <img id="roomPhotoImg" src="" alt="Foto Ruangan Ujian" style="display:none;" onerror="gagalMuatFotoRuangan()">
+            <span id="roomPhotoZoomHint" class="room-photo-zoom-hint no-print" style="display:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>
+              <span>Perbesar</span>
+            </span>
+            <div id="roomPhotoPlaceholder" class="room-photo-placeholder">
+              <div class="room-photo-placeholder-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+              </div>
+              <div class="room-photo-placeholder-title">Frame Foto Ruangan</div>
+              <div class="room-photo-placeholder-sub">Foto lokasi ruangan akan tampil di sini</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+            <span>KODE QR PRESENSI KEHADIRAN</span>
+          </div>
+          <div class="qr-white-frame"><div id="qrcode"></div></div>
+          <div id="qrTextLabel" class="qr-code-text">-</div>
+          <div class="qr-hint">Tunjukkan QR ini kepada panitia saat masuk ruangan</div>
+          <button type="button" class="btn-download-glass no-print" onclick="unduhKodeQR()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>Unduh Kode QR (PNG)</span>
+          </button>
+        </div>
+
+        <div class="mid-ticker-bar no-print">
+          <span class="mid-ticker-badge">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <span>PROMO</span>
+          </span>
+          <div class="ticker-viewport"><div id="midTickerTrack" class="ticker-track"></div></div>
+        </div>
+
+        <div class="participant-card-box">
+          <div class="participant-card-header">
+            <div class="participant-card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+              <span>KARTU PESERTA UJIAN</span>
+            </div>
+            <span class="participant-card-tag">AKUN CBT</span>
+          </div>
+
+          <div class="participant-card-body">
+            <div class="p-card-row">
+              <div class="p-card-label">NAMA PESERTA</div>
+              <div id="cardNama" class="p-card-value" style="text-transform: uppercase;">-</div>
+            </div>
+            <div class="p-card-row">
+              <div class="p-card-label">ASAL SEKOLAH</div>
+              <div id="cardSekolah" class="p-card-value" style="text-transform: uppercase;">-</div>
+            </div>
+            <div class="p-card-row">
+              <div class="p-card-label">SESI &amp; RUANG UJIAN</div>
+              <div id="cardSesiRuang" class="p-card-value">-</div>
+            </div>
+            <div class="p-card-grid">
+              <div class="p-card-cred">
+                <div class="p-card-cred-text">
+                  <div class="p-card-label">USERNAME</div>
+                  <div id="cardUsername" class="p-card-cred-val">-</div>
+                </div>
+                <button type="button" class="btn-copy-mini no-print" onclick="salinTeks('cardUsername', this)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+              <div class="p-card-cred">
+                <div class="p-card-cred-text">
+                  <div class="p-card-label">PASSWORD</div>
+                  <div id="cardPassword" class="p-card-cred-val">-</div>
+                </div>
+                <button type="button" class="btn-copy-mini no-print" onclick="salinTeks('cardPassword', this)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+              </div>
+            </div>
+            <button type="button" class="btn-download-glass no-print" onclick="unduhKartuPeserta()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>Unduh Kartu Peserta (PNG)</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="inlinePromoSection" class="inline-promo-section no-print">
+          <div class="inline-promo-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <span>INFORMASI &amp; PROMO SPESIAL</span>
+          </div>
+          <div class="inline-promo-card">
+            <div id="inlinePromoTrack" class="promo-track"></div>
+            <button type="button" id="btnPrevInline" class="promo-nav prev" onclick="geserInlineSlide(-1)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button type="button" id="btnNextInline" class="promo-nav next" onclick="geserInlineSlide(1)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+            <div class="promo-footer-bar">
+              <div id="inlinePromoDots" class="promo-dots"></div>
+              <span style="font-size: 11px; color: #fef9c3; cursor: pointer;" onclick="initPromoSlider()">Perbesar poster &nearr;</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider no-print">
+
+        <button type="button" id="btnReset" class="btn-outline no-print">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          <span>Cari Peserta Lain</span>
+        </button>
+        <button type="button" id="btnPrint" class="btn-dark no-print">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          <span>Cetak / Simpan PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">&copy; Panitia Try Out TKA SD. Hak Cipta Dilindungi.</footer>
+
+  <div class="promo-ticker-bar no-print">
+    <span class="ticker-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+      <span>INFO</span>
+    </span>
+    <div class="ticker-viewport"><div id="tickerTrack" class="ticker-track"></div></div>
+  </div>
+
+  <script>
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzX4PEWtI7rPLbPHzPouvygDvWYwqNfJgXcA8mMnxsp_7lmcPVZowiLGVytwbT3GkkcrQ/exec';
+
+    let SERVER_INIT_DATA = {
+      peserta: [],
+      iklan: [],
+      logoDataUri: '',
+      logoLightDataUri: '',
+      logoUrl: '',
+      promoTeks: '',
+      waNumber: '',
+      waText: '',
+      webAppUrl: window.location.href
+    };
+
+    let currentPeserta = null;
+
+    function bukaWhatsAppAdmin() {
+      const waNum = (SERVER_INIT_DATA && SERVER_INIT_DATA.waNumber) ? String(SERVER_INIT_DATA.waNumber).replace(/\D/g, '') : '';
+      let pesan = (SERVER_INIT_DATA && SERVER_INIT_DATA.waText)
+        ? SERVER_INIT_DATA.waText
+        : 'Halo Admin Panitia Try Out TKA SD, saya ingin bertanya terkait informasi ruangan ujian.';
+
+      if (currentPeserta && currentPeserta.nama) {
+        pesan += '\n\nData Peserta:\n' +
+          '• Nama: ' + String(currentPeserta.nama).toUpperCase() + '\n' +
+          '• Sekolah: ' + String(currentPeserta.sekolah).toUpperCase() + '\n' +
+          '• No. Peserta: ' + currentPeserta.noPeserta;
+      }
+
+      const waUrl = waNum
+        ? ('https://wa.me/' + waNum + '?text=' + encodeURIComponent(pesan))
+        : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(pesan));
+
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    (function initDraggableWhatsApp() {
+      const btn = document.getElementById('waFloatingBtn');
+      if (!btn) return;
+      let isPointerDown = false, hasMoved = false, startX = 0, startY = 0, offsetX = 0, offsetY = 0;
+
+      function clampPosition(left, top) {
+        const w = btn.offsetWidth || 56, h = btn.offsetHeight || 56;
+        return {
+          x: Math.min(Math.max(left, 10), Math.max(10, window.innerWidth - w - 10)),
+          y: Math.min(Math.max(top, 58), Math.max(58, window.innerHeight - h - 48))
+        };
+      }
+
+      function onStart(clientX, clientY) {
+        isPointerDown = true; hasMoved = false;
+        const rect = btn.getBoundingClientRect();
+        btn.style.left = rect.left + 'px'; btn.style.top = rect.top + 'px';
+        btn.style.right = 'auto'; btn.style.bottom = 'auto';
+        startX = clientX; startY = clientY;
+        offsetX = clientX - rect.left; offsetY = clientY - rect.top;
+      }
+
+      function onMove(clientX, clientY, e) {
+        if (!isPointerDown) return;
+        if (!hasMoved && Math.hypot(clientX - startX, clientY - startY) > 6) {
+          hasMoved = true; btn.classList.add('is-dragging');
+        }
+        if (hasMoved) {
+          if (e && e.cancelable) e.preventDefault();
+          const pos = clampPosition(clientX - offsetX, clientY - offsetY);
+          btn.style.left = pos.x + 'px'; btn.style.top = pos.y + 'px';
+        }
+      }
+
+      function onEnd() {
+        if (!isPointerDown) return;
+        isPointerDown = false; btn.classList.remove('is-dragging');
+        if (!hasMoved) bukaWhatsAppAdmin();
+      }
+
+      btn.addEventListener('touchstart', e => { if (e.touches && e.touches.length === 1) onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+      window.addEventListener('touchmove', e => { if (isPointerDown && e.touches && e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY, e); }, { passive: false });
+      window.addEventListener('touchend', onEnd);
+      btn.addEventListener('mousedown', e => { if (e.button === 0) onStart(e.clientX, e.clientY); });
+      window.addEventListener('mousemove', e => { if (isPointerDown) onMove(e.clientX, e.clientY, e); });
+      window.addEventListener('mouseup', onEnd);
+    })();
+
+    let loadedLogoImage = null, logoDarkSrc = '', logoLightSrc = '';
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [h, s, l];
+    }
+
+    function hslToRgb(h, s, l) {
+      let r, g, b;
+      if (s === 0) { r = g = b = l; }
+      else {
+        const hue2rgb = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
+      }
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+
+    function buatVersiLogoModeTerang(srcUrl) {
+      return new Promise(resolve => {
+        if (!srcUrl) { resolve(''); return; }
+        const img = new Image(); img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          try {
+            const w = img.naturalWidth, h = img.naturalHeight;
+            if (!w || !h) { resolve(srcUrl); return; }
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, w, h), data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              if (data[i + 3] < 10) continue;
+              const hsl = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+              if (hsl[1] < 0.25 && hsl[2] >= 0.35) {
+                const rgb = hslToRgb(144 / 360, 0.62, 0.15 + (1 - hsl[2]) * 0.42);
+                data[i] = rgb[0]; data[i + 1] = rgb[1]; data[i + 2] = rgb[2];
+              } else if (hsl[2] > 0.38) {
+                const rgb = hslToRgb(hsl[0], Math.min(1, hsl[1] * 1.08), 0.24 + (hsl[2] - 0.38) * 0.25);
+                data[i] = rgb[0]; data[i + 1] = rgb[1]; data[i + 2] = rgb[2];
+              }
+            }
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) { resolve(srcUrl); }
+        };
+        img.onerror = () => resolve(srcUrl);
+        img.src = srcUrl;
+      });
+    }
+
+    function updateStickyLogoByTheme() {
+      const stickyLogo = document.getElementById('stickyLogoImg');
+      if (!stickyLogo) return;
+      const isDark = document.body.classList.contains('dark-mode');
+      const targetSrc = isDark ? logoDarkSrc : (logoLightSrc || logoDarkSrc);
+      if (targetSrc) { stickyLogo.src = targetSrc; stickyLogo.style.display = 'block'; }
+    }
+
+    function applyTheme(isDark) {
+      document.body.classList.toggle('dark-mode', isDark);
+      document.getElementById('thumbSun').style.display = isDark ? 'none' : 'block';
+      document.getElementById('thumbMoon').style.display = isDark ? 'block' : 'none';
+      updateStickyLogoByTheme();
+    }
+
+    function toggleTema() {
+      const nextDark = !document.body.classList.contains('dark-mode');
+      applyTheme(nextDark);
+      try { localStorage.setItem('tka_theme_mode', nextDark ? 'dark' : 'light'); } catch (e) {}
+    }
+
+    (function initSavedTheme() {
+      try { if (localStorage.getItem('tka_theme_mode') === 'dark') applyTheme(true); } catch (e) {}
+    })();
+
+    function initLogoFromServer() {
+      const rawDarkSrc = SERVER_INIT_DATA.logoDataUri || SERVER_INIT_DATA.logoUrl || '';
+      const manualLightSrc = SERVER_INIT_DATA.logoLightDataUri || '';
+      if (!rawDarkSrc && !manualLightSrc) return;
+      logoDarkSrc = rawDarkSrc || manualLightSrc;
+      if (manualLightSrc) { logoLightSrc = manualLightSrc; updateStickyLogoByTheme(); }
+      else { buatVersiLogoModeTerang(logoDarkSrc).then(gen => { logoLightSrc = gen || logoDarkSrc; updateStickyLogoByTheme(); }); }
+      ensureLogoLoaded();
+    }
+
+    function ensureLogoLoaded() {
+      return new Promise(resolve => {
+        if (loadedLogoImage && loadedLogoImage.complete && loadedLogoImage.naturalWidth > 0) { resolve(loadedLogoImage); return; }
+        const dataUri = logoDarkSrc || SERVER_INIT_DATA.logoDataUri || SERVER_INIT_DATA.logoUrl;
+        if (!dataUri) { resolve(null); return; }
+        const imgObj = new Image(); imgObj.crossOrigin = 'anonymous';
+        imgObj.onload = () => { loadedLogoImage = imgObj; resolve(imgObj); };
+        imgObj.onerror = () => resolve(null);
+        imgObj.src = dataUri;
+      });
+    }
+
+    const baseRunningText = [
+      "Yuk persiapkan ujian lebih matang! <strong>Daftar Program Bimbingan Belajar Intensif TKA SD</strong> sekarang &amp; dapatkan diskon khusus peserta Try Out!",
+      "Ajak teman &amp; kerabatmu bergabung! Konsultasi gratis dan info pendaftaran silakan hubungi <strong>Panitia di Meja Informasi</strong>.",
+      "Klik tombol <strong>Unduh Kode QR</strong> &amp; <strong>Unduh Kartu Peserta</strong> agar tersimpan otomatis di galeri HP kamu."
+    ];
+
+    function initRunningText() {
+      const list = baseRunningText.slice();
+      if (SERVER_INIT_DATA && SERVER_INIT_DATA.promoTeks) list.unshift("<strong>" + SERVER_INIT_DATA.promoTeks + "</strong>");
+      const itemsHtml = list.map(t => `<span class="ticker-item"><span>${t}</span><span class="ticker-sep">&#10022;</span></span>`).join('');
+      document.getElementById('tickerTrack').innerHTML = itemsHtml + itemsHtml;
+      document.getElementById('midTickerTrack').innerHTML = itemsHtml + itemsHtml;
+    }
+
+    function salinTeks(elementId, btnEl) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const teks = el.textContent.trim();
+      if (!teks || teks === '-') return;
+      const originalHtml = btnEl.innerHTML;
+      const done = () => { btnEl.innerHTML = '&#10004;'; setTimeout(() => { btnEl.innerHTML = originalHtml; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(teks).then(done).catch(() => { fallbackSalin(teks); done(); }); }
+      else { fallbackSalin(teks); done(); }
+    }
+
+    function fallbackSalin(teks) {
+      const ta = document.createElement('textarea'); ta.value = teks; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    const QRGenerator = (function() {
+      const EXP = new Uint8Array(256), LOG = new Uint8Array(256);
+      let v = 1;
+      for (let i = 0; i < 255; i++) { EXP[i] = v; LOG[v] = i; v <<= 1; if (v & 256) v ^= 0x11d; }
+      EXP[255] = 1;
+      const gfMul = (a, b) => (a === 0 || b === 0) ? 0 : EXP[(LOG[a] + LOG[b]) % 255];
+      function getEC(data, ecCount) {
+        let poly = [1];
+        for (let i = 0; i < ecCount; i++) {
+          const next = new Array(poly.length + 1).fill(0);
+          for (let j = 0; j < poly.length; j++) { next[j] ^= poly[j]; next[j + 1] ^= gfMul(poly[j], EXP[i]); }
+          poly = next;
+        }
+        const rem = new Uint8Array(ecCount);
+        for (let i = 0; i < data.length; i++) {
+          const f = data[i] ^ rem[0];
+          for (let j = 0; j < ecCount - 1; j++) rem[j] = rem[j + 1] ^ gfMul(poly[j + 1], f);
+          rem[ecCount - 1] = gfMul(poly[ecCount], f);
+        }
+        return rem;
+      }
+      const VERSIONS = [null, { size: 21, totalData: 19, ec: 7, align: null }, { size: 25, totalData: 34, ec: 10, align: 18 }, { size: 29, totalData: 55, ec: 15, align: 22 }, { size: 33, totalData: 80, ec: 20, align: 26 }, { size: 37, totalData: 108, ec: 26, align: 30 }];
+      function getMatrix(text) {
+        const str = String(text || ''), bytes = [];
+        for (let i = 0; i < str.length; i++) bytes.push(str.charCodeAt(i) & 0xff);
+        let ver = 1;
+        while (ver <= 5 && bytes.length > VERSIONS[ver].totalData - 2) ver++;
+        if (ver > 5) ver = 5;
+        const cfg = VERSIONS[ver], size = cfg.size, bits = [];
+        const pushBits = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+        const maxLen = Math.min(bytes.length, cfg.totalData - 2);
+        pushBits(0b0100, 4); pushBits(maxLen, 8);
+        for (let i = 0; i < maxLen; i++) pushBits(bytes[i], 8);
+        pushBits(0, Math.min(4, cfg.totalData * 8 - bits.length));
+        while (bits.length % 8 !== 0) bits.push(0);
+        const dataCW = new Uint8Array(cfg.totalData);
+        for (let i = 0; i < bits.length / 8; i++) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i * 8 + j]; dataCW[i] = b; }
+        const pads = [0xec, 0x11];
+        for (let i = bits.length / 8, p = 0; i < cfg.totalData; i++, p++) dataCW[i] = pads[p % 2];
+        const ecCW = getEC(dataCW, cfg.ec), allCW = new Uint8Array(cfg.totalData + cfg.ec);
+        allCW.set(dataCW, 0); allCW.set(ecCW, cfg.totalData);
+        const mod = Array.from({ length: size }, () => new Uint8Array(size)), isFunc = Array.from({ length: size }, () => new Uint8Array(size));
+        const setMod = (c, r, val) => { if (c >= 0 && c < size && r >= 0 && r < size) { mod[r][c] = val ? 1 : 0; isFunc[r][c] = 1; } };
+        const placeFinder = (cx, cy) => {
+          for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+            const inO = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6, inI = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4, onB = dx === 0 || dx === 6 || dy === 0 || dy === 6;
+            setMod(cx + dx, cy + dy, inO && (onB || inI) ? 1 : 0);
+          }
+        };
+        placeFinder(0, 0); placeFinder(size - 7, 0); placeFinder(0, size - 7);
+        if (cfg.align !== null) {
+          const a = cfg.align;
+          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setMod(a + dx, a + dy, (Math.abs(dx) === 2 || Math.abs(dy) === 2 || (dx === 0 && dy === 0)) ? 1 : 0);
+        }
+        for (let i = 8; i < size - 8; i++) { setMod(i, 6, i % 2 === 0 ? 1 : 0); setMod(6, i, i % 2 === 0 ? 1 : 0); }
+        setMod(8, size - 8, 1);
+        const fmt1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+        const fmt2 = [[size-1,8],[size-2,8],[size-3,8],[size-4,8],[size-5,8],[size-6,8],[size-7,8],[size-8,8],[8,size-7],[8,size-6],[8,size-5],[8,size-4],[8,size-3],[8,size-2],[8,size-1]];
+        fmt1.forEach(([c, r]) => { isFunc[r][c] = 1; }); fmt2.forEach(([c, r]) => { isFunc[r][c] = 1; });
+        let bitIdx = 0, up = true;
+        for (let col = size - 1; col > 0; col -= 2) {
+          if (col === 6) col--;
+          for (let i = 0; i < size; i++) {
+            const r = up ? (size - 1 - i) : i;
+            for (let dx = 0; dx < 2; dx++) {
+              const c = col - dx;
+              if (!isFunc[r][c]) { mod[r][c] = bitIdx < allCW.length * 8 ? (allCW[bitIdx >> 3] >> (7 - (bitIdx & 7))) & 1 : 0; bitIdx++; }
+            }
+          }
+          up = !up;
+        }
+        const grid = mod.map((row, r) => row.map((val, c) => (!isFunc[r][c] && (r + c) % 2 === 0) ? (val ^ 1) : val));
+        const d = (1 << 3) | 0; let rem = d << 10;
+        for (let i = 14; i >= 10; i--) if ((rem >> i) & 1) rem ^= (0x537 << (i - 10));
+        const fmt = ((d << 10) | rem) ^ 0x5412;
+        for (let i = 0; i < 15; i++) { const bit = (fmt >> i) & 1; grid[fmt1[i][1]][fmt1[i][0]] = bit; grid[fmt2[i][1]][fmt2[i][0]] = bit; }
+        return { size, grid };
+      }
+      function buildSVG(text) {
+        const { size, grid } = getMatrix(text), q = 2, total = size + q * 2;
+        let pathD = '';
+        for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (grid[r][c]) pathD += `M${c + q} ${r + q}h1v1h-1z`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="156" height="156" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges"><rect width="${total}" height="${total}" fill="#ffffff"/><path d="${pathD}" fill="#0f172a"/></svg>`;
+      }
+      return { buildSVG, getMatrix };
+    })();
+
+    let daftarIklan = [], currentSlide = 0, slideTimer = null, touchStartX = 0, promoEventsBound = false;
+
+    function initPromoSlider() {
+      if (!daftarIklan || daftarIklan.length === 0) return;
+      currentSlide = 0;
+      const modal = document.getElementById('promoModal'), track = document.getElementById('promoTrack'), dots = document.getElementById('promoDots');
+      track.style.transform = 'translateX(0%)';
+      track.innerHTML = daftarIklan.map((item, idx) => `<div class="promo-slide" style="${item.link ? 'cursor:pointer;' : ''}" onclick="klikSlide(${idx})"><div class="promo-ig-frame"><img src="${item.gambar}" alt="Promo ${idx + 1}" decoding="async"></div></div>`).join('');
+      dots.innerHTML = daftarIklan.map((_, idx) => `<button type="button" class="promo-dot ${idx === 0 ? 'active' : ''}" onclick="keSlide(${idx})"></button>`).join('');
+      document.getElementById('btnPrevSlide').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+      document.getElementById('btnNextSlide').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+      if (!promoEventsBound) {
+        promoEventsBound = true;
+        track.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; if (slideTimer) clearInterval(slideTimer); }, { passive: true });
+        track.addEventListener('touchend', e => { const diff = touchStartX - e.changedTouches[0].screenX; if (Math.abs(diff) > 40) geserSlide(diff > 0 ? 1 : -1); mulaiAutoSlide(); }, { passive: true });
+      }
+      modal.style.display = 'flex';
+      mulaiAutoSlide();
+    }
+
+    function keSlide(index) {
+      const total = daftarIklan.length; currentSlide = (index + total) % total;
+      document.getElementById('promoTrack').style.transform = `translateX(-${currentSlide * 100}%)`;
+      document.querySelectorAll('#promoDots .promo-dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    }
+    function geserSlide(arah) { keSlide(currentSlide + arah); }
+    function klikSlide(idx) { if (daftarIklan[idx] && daftarIklan[idx].link) window.open(daftarIklan[idx].link, '_blank'); }
+    function mulaiAutoSlide() { if (daftarIklan.length <= 1) return; if (slideTimer) clearInterval(slideTimer); slideTimer = setInterval(() => geserSlide(1), 4500); }
+    function tutupIklan() { if (slideTimer) clearInterval(slideTimer); document.getElementById('promoModal').style.display = 'none'; }
+
+    let currentInlineSlide = 0, inlineSlideTimer = null, currentSearchInlineSlide = 0, searchInlineSlideTimer = null;
+
+    function initInlinePromoSlider() {
+      const hasIklan = daftarIklan && daftarIklan.length > 0;
+      const section = document.getElementById('inlinePromoSection');
+      if (!hasIklan) { if (section) section.style.display = 'none'; }
+      else if (section) {
+        section.style.display = 'block';
+        document.getElementById('inlinePromoTrack').innerHTML = daftarIklan.map((item, idx) => `<div class="promo-slide" onclick="klikSlide(${idx})"><div class="promo-ig-frame"><img src="${item.gambar}" alt="Promo ${idx + 1}" loading="lazy"></div></div>`).join('');
+        document.getElementById('inlinePromoDots').innerHTML = daftarIklan.map((_, idx) => `<button type="button" class="promo-dot ${idx === 0 ? 'active' : ''}" onclick="keInlineSlide(${idx})"></button>`).join('');
+        document.getElementById('btnPrevInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        document.getElementById('btnNextInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        if (inlineSlideTimer) clearInterval(inlineSlideTimer);
+        if (daftarIklan.length > 1) inlineSlideTimer = setInterval(() => geserInlineSlide(1), 4500);
+      }
+
+      const searchSectionPromo = document.getElementById('searchInlinePromoSection');
+      if (!hasIklan) { if (searchSectionPromo) searchSectionPromo.style.display = 'none'; }
+      else if (searchSectionPromo) {
+        searchSectionPromo.style.display = 'block';
+        document.getElementById('searchInlinePromoTrack').innerHTML = daftarIklan.map((item, idx) => `<div class="promo-slide" style="cursor:pointer;" onclick="initPromoSlider()"><div class="promo-ig-frame"><img src="${item.gambar}" alt="Poster ${idx + 1}" loading="lazy"></div></div>`).join('');
+        document.getElementById('searchInlinePromoDots').innerHTML = daftarIklan.map((_, idx) => `<button type="button" class="promo-dot ${idx === 0 ? 'active' : ''}" onclick="keSearchInlineSlide(${idx})"></button>`).join('');
+        document.getElementById('btnPrevSearchInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        document.getElementById('btnNextSearchInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        if (searchInlineSlideTimer) clearInterval(searchInlineSlideTimer);
+        if (daftarIklan.length > 1) searchInlineSlideTimer = setInterval(() => geserSearchInlineSlide(1), 4500);
+      }
+    }
+
+    function keInlineSlide(index) {
+      const total = daftarIklan.length; currentInlineSlide = (index + total) % total;
+      document.getElementById('inlinePromoTrack').style.transform = `translateX(-${currentInlineSlide * 100}%)`;
+      document.querySelectorAll('#inlinePromoDots .promo-dot').forEach((d, i) => d.classList.toggle('active', i === currentInlineSlide));
+    }
+    function geserInlineSlide(arah) { keInlineSlide(currentInlineSlide + arah); }
+    function keSearchInlineSlide(index) {
+      const total = daftarIklan.length; currentSearchInlineSlide = (index + total) % total;
+      document.getElementById('searchInlinePromoTrack').style.transform = `translateX(-${currentSearchInlineSlide * 100}%)`;
+      document.querySelectorAll('#searchInlinePromoDots .promo-dot').forEach((d, i) => d.classList.toggle('active', i === currentSearchInlineSlide));
+    }
+    function geserSearchInlineSlide(arah) { keSearchInlineSlide(currentSearchInlineSlide + arah); }
+
+    let activeRoomPhotoSrc = '', activeRoomCaption = '';
+    function tampilkanFotoRuangan(peserta) {
+      const frame = document.getElementById('roomPhotoFrame'), img = document.getElementById('roomPhotoImg'), ph = document.getElementById('roomPhotoPlaceholder'), zh = document.getElementById('roomPhotoZoomHint');
+      activeRoomPhotoSrc = (peserta && peserta.fotoRuang) ? peserta.fotoRuang : '';
+      activeRoomCaption = peserta.lantai + ' — ' + peserta.ruang;
+      if (activeRoomPhotoSrc) { img.src = activeRoomPhotoSrc; img.style.display = 'block'; ph.style.display = 'none'; zh.style.display = 'inline-flex'; frame.classList.add('has-photo'); }
+      else { gagalMuatFotoRuangan(); }
+    }
+    function gagalMuatFotoRuangan() {
+      activeRoomPhotoSrc = '';
+      document.getElementById('roomPhotoImg').style.display = 'none';
+      document.getElementById('roomPhotoPlaceholder').style.display = 'flex';
+      document.getElementById('roomPhotoZoomHint').style.display = 'none';
+      document.getElementById('roomPhotoFrame').classList.remove('has-photo');
+    }
+    function bukaFotoRuangan() {
+      if (!activeRoomPhotoSrc) return;
+      document.getElementById('roomPhotoModalImg').src = activeRoomPhotoSrc;
+      document.getElementById('roomPhotoModalCaption').textContent = activeRoomCaption;
+      document.getElementById('roomPhotoModal').style.display = 'flex';
+    }
+    function tutupFotoRuangan() { document.getElementById('roomPhotoModal').style.display = 'none'; }
+
+    function roundRectPath(ctx, x, y, w, h, r) {
+      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    function drawDirectLogoOnCanvas(ctx, logoImg, leftX, centerY, maxW, maxH) {
+      if (!logoImg || !logoImg.naturalWidth || !logoImg.naturalHeight) return 0;
+      const ratio = Math.min(maxW / logoImg.naturalWidth, maxH / logoImg.naturalHeight);
+      const drawW = logoImg.naturalWidth * ratio, drawH = logoImg.naturalHeight * ratio, drawY = centerY - (drawH / 2);
+      ctx.save(); ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      ctx.drawImage(logoImg, leftX, drawY, drawW, drawH); ctx.restore();
+      return drawW;
+    }
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+      const words = String(text || '-').split(' '); let line = '', lineCount = 0;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+          lineCount++;
+          if (maxLines && lineCount >= maxLines) { ctx.fillText(line.trim() + '...', x, y); return y + lineHeight; }
+          ctx.fillText(line.trim(), x, y); line = words[n] + ' '; y += lineHeight;
+        } else { line = testLine; }
+      }
+      ctx.fillText(line.trim(), x, y); return y + lineHeight;
+    }
+    function triggerCanvasDownload(canvas, filename) {
+      const link = document.createElement('a'); link.href = canvas.toDataURL('image/png'); link.download = filename;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    const CANVAS_FONT_ROUND = '"Arial Rounded MT Bold", "Nunito", "Varela Round", sans-serif';
+
+    async function unduhKodeQR() {
+      if (!currentPeserta) return;
+      const logoImg = await ensureLogoLoaded();
+      const canvas = document.createElement('canvas'); canvas.width = 760; canvas.height = 960;
+      const ctx = canvas.getContext('2d');
+      const bgGrad = ctx.createLinearGradient(0, 0, 760, 960);
+      bgGrad.addColorStop(0, '#e7f6ec'); bgGrad.addColorStop(0.5, '#f7fae8'); bgGrad.addColorStop(1, '#fef9c3');
+      ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 760, 960);
+      roundRectPath(ctx, 40, 40, 680, 880, 36); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#16a34a'; ctx.stroke();
+      ctx.save(); roundRectPath(ctx, 40, 40, 680, 155, 36); ctx.clip();
+      const headGrad = ctx.createLinearGradient(40, 40, 720, 195);
+      headGrad.addColorStop(0, '#14532d'); headGrad.addColorStop(0.55, '#15803d'); headGrad.addColorStop(1, '#ca8a04');
+      ctx.fillStyle = headGrad; ctx.fillRect(40, 40, 680, 155); ctx.restore();
+      const drawnLogoW = drawDirectLogoOnCanvas(ctx, logoImg, 72, 117, 110, 88);
+      if (drawnLogoW > 0) {
+        const textX = 72 + drawnLogoW + 18; ctx.textAlign = 'left';
+        ctx.fillStyle = '#fef08a'; ctx.font = 'bold 25px ' + CANVAS_FONT_ROUND; ctx.fillText('KODE QR PRESENSI KEHADIRAN', textX, 108);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 19px ' + CANVAS_FONT_ROUND; ctx.fillText('Try Out Tes Kemampuan Akademik (TKA) SD', textX, 146);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fef08a'; ctx.font = 'bold 28px ' + CANVAS_FONT_ROUND; ctx.fillText('KODE QR PRESENSI KEHADIRAN', 380, 106);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 21px ' + CANVAS_FONT_ROUND; ctx.fillText('Try Out Tes Kemampuan Akademik (TKA) SD', 380, 148);
+      }
+      roundRectPath(ctx, 165, 235, 430, 430, 26); ctx.fillStyle = '#f0fdf4'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#86efac'; ctx.stroke();
+      const { size, grid } = QRGenerator.getMatrix(currentPeserta.noPeserta);
+      const cellSize = Math.floor(360 / size), actualQR = cellSize * size, startX = Math.floor((760 - actualQR) / 2), startY = Math.floor(235 + (430 - actualQR) / 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(startX - 16, startY - 16, actualQR + 32, actualQR + 32);
+      ctx.fillStyle = '#0f172a';
+      for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (grid[r][c]) ctx.fillRect(startX + c * cellSize, startY + r * cellSize, cellSize, cellSize);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#14532d'; ctx.font = 'bold 34px "Courier New", monospace'; ctx.fillText(currentPeserta.noPeserta, 380, 730);
+      ctx.fillStyle = '#14281d'; ctx.font = 'bold 26px ' + CANVAS_FONT_ROUND; drawWrappedText(ctx, currentPeserta.nama.toUpperCase(), 380, 780, 600, 34, 2);
+      ctx.fillStyle = '#4d7c0f'; ctx.font = 'bold 20px ' + CANVAS_FONT_ROUND; ctx.fillText(currentPeserta.sekolah.toUpperCase(), 380, 862);
+      triggerCanvasDownload(canvas, 'QR_Presensi_' + String(currentPeserta.noPeserta || 'Peserta').replace(/[^a-zA-Z0-9_-]/g, '_') + '.png');
+    }
+
+    async function unduhKartuPeserta() {
+      if (!currentPeserta) return;
+      const logoImg = await ensureLogoLoaded();
+      const canvas = document.createElement('canvas'); canvas.width = 900; canvas.height = 1120;
+      const ctx = canvas.getContext('2d');
+      const bgGrad = ctx.createLinearGradient(0, 0, 900, 1120);
+      bgGrad.addColorStop(0, '#e7f6ec'); bgGrad.addColorStop(0.5, '#f7fae8'); bgGrad.addColorStop(1, '#fef9c3');
+      ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 900, 1120);
+      roundRectPath(ctx, 40, 40, 820, 1040, 36); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#16a34a'; ctx.stroke();
+      ctx.save(); roundRectPath(ctx, 40, 40, 820, 165, 36); ctx.clip();
+      const headGrad = ctx.createLinearGradient(40, 40, 860, 205);
+      headGrad.addColorStop(0, '#14532d'); headGrad.addColorStop(0.55, '#15803d'); headGrad.addColorStop(1, '#ca8a04');
+      ctx.fillStyle = headGrad; ctx.fillRect(40, 40, 820, 165); ctx.restore();
+      const drawnLogoW = drawDirectLogoOnCanvas(ctx, logoImg, 76, 122, 115, 92);
+      const textStartX = drawnLogoW > 0 ? (76 + drawnLogoW + 18) : 80;
+      ctx.textAlign = 'left'; ctx.fillStyle = '#fef08a'; ctx.font = 'bold 29px ' + CANVAS_FONT_ROUND; ctx.fillText('KARTU PESERTA UJIAN', textStartX, 112);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 19px ' + CANVAS_FONT_ROUND; ctx.fillText('Try Out Tes Kemampuan Akademik (TKA) SD', textStartX, 150);
+      roundRectPath(ctx, 620, 74, 205, 86, 18); ctx.fillStyle = 'rgba(20, 83, 45, 0.45)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(254, 240, 138, 0.75)'; ctx.stroke();
+      ctx.textAlign = 'center'; ctx.fillStyle = '#fef08a'; ctx.font = 'bold 16px ' + CANVAS_FONT_ROUND; ctx.fillText('NO. PESERTA', 722, 104);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 23px "Courier New", monospace'; ctx.fillText(currentPeserta.noPeserta, 722, 140);
+
+      function drawFieldBox(x, y, w, h, label, value, isHighlight, isMono) {
+        roundRectPath(ctx, x, y, w, h, 20);
+        if (isHighlight) {
+          const boxGrad = ctx.createLinearGradient(x, y, x + w, y + h); boxGrad.addColorStop(0, '#f0fdf4'); boxGrad.addColorStop(1, '#fefce8');
+          ctx.fillStyle = boxGrad; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#4ade80'; ctx.stroke();
+        } else {
+          ctx.fillStyle = '#f8fafc'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#e2e8f0'; ctx.stroke();
+        }
+        ctx.textAlign = 'left'; ctx.fillStyle = '#64748b'; ctx.font = 'bold 17px ' + CANVAS_FONT_ROUND; ctx.fillText(label, x + 24, y + 36);
+        ctx.fillStyle = '#14532d'; ctx.font = isMono ? 'bold 30px "Courier New", monospace' : 'bold 26px ' + CANVAS_FONT_ROUND;
+        drawWrappedText(ctx, value, x + 24, y + 76, w - 48, 32, 2);
+      }
+
+      const lokasiRuang = currentPeserta.lantai + ' — ' + currentPeserta.ruang;
+      const sesiRuang = currentPeserta.sesi + ' • ' + lokasiRuang;
+      drawFieldBox(80, 240, 740, 115, 'NAMA PESERTA', currentPeserta.nama.toUpperCase(), false, false);
+      drawFieldBox(80, 375, 740, 115, 'ASAL SEKOLAH', currentPeserta.sekolah.toUpperCase(), false, false);
+      drawFieldBox(80, 510, 740, 115, 'SESI & RUANG UJIAN', sesiRuang, false, false);
+      drawFieldBox(80, 645, 355, 115, 'USERNAME', currentPeserta.username || '-', true, true);
+      drawFieldBox(465, 645, 355, 115, 'PASSWORD', currentPeserta.password || '-', true, true);
+
+      roundRectPath(ctx, 80, 795, 740, 240, 22); ctx.fillStyle = '#f0fdf4'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#86efac'; ctx.stroke();
+      const { size, grid } = QRGenerator.getMatrix(currentPeserta.noPeserta);
+      const cell = Math.floor(175 / size), actualMini = cell * size, qrX = 112, qrY = Math.floor(795 + (240 - actualMini) / 2);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(qrX - 10, qrY - 10, actualMini + 20, actualMini + 20);
+      ctx.fillStyle = '#0f172a';
+      for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (grid[r][c]) ctx.fillRect(qrX + c * cell, qrY + r * cell, cell, cell);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#14532d'; ctx.font = 'bold 23px ' + CANVAS_FONT_ROUND; ctx.fillText('KODE QR PRESENSI & AKUN CBT', 325, 855);
+      ctx.fillStyle = '#3f6212'; ctx.font = 'bold 18px ' + CANVAS_FONT_ROUND;
+      drawWrappedText(ctx, 'Simpan kartu ini di galeri HP. Tunjukkan Kode QR kepada panitia saat masuk ruangan dan gunakan Username & Password di atas untuk login ujian.', 325, 895, 465, 28, 4);
+      triggerCanvasDownload(canvas, 'Kartu_Peserta_' + String(currentPeserta.nama || 'Peserta').trim().replace(/[^a-zA-Z0-9_-]/g, '_') + '.png');
+    }
+
+    let allPeserta = [], filteredSiswa = [];
+    const LABEL_TANPA_SEKOLAH = 'SEKOLAH TIDAK TERDAFTAR';
+    const searchSection = document.getElementById('searchSection');
+    const resultSection = document.getElementById('resultSection');
+    const selectSekolah = document.getElementById('selectSekolah');
+    const selectSiswa = document.getElementById('selectSiswa');
+    const btnCek = document.getElementById('btnCek');
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initRunningText();
+      const apiUrl = GAS_API_URL + (GAS_API_URL.indexOf('?') === -1 ? '?mode=json' : '&mode=json');
+
+      fetch(apiUrl)
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+          if (res) {
+            SERVER_INIT_DATA = Object.assign(SERVER_INIT_DATA, res);
+            initLogoFromServer();
+            initRunningText();
+            if (res.iklan && res.iklan.length > 0) {
+              daftarIklan = res.iklan;
+              initPromoSlider();
+              initInlinePromoSlider();
+            }
+            allPeserta = res.peserta || [];
+            populateSekolah();
+          }
+        })
+        .catch(function() {
+          selectSekolah.innerHTML = '<option value="">Gagal memuat data (Periksa koneksi / link)</option>';
+        });
+    });
+
+    function populateSekolah() {
+      const sekolahList = Array.from(new Set(allPeserta.map(i => String(i.sekolah || '').toUpperCase())))
+        .filter(s => s && s !== LABEL_TANPA_SEKOLAH)
+        .sort((a, b) => a.localeCompare(b));
+      selectSekolah.innerHTML = '<option value="">-- Pilih Asal Sekolah --</option>';
+      sekolahList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        selectSekolah.appendChild(opt);
+      });
+      const optLain = document.createElement('option');
+      optLain.value = LABEL_TANPA_SEKOLAH; optLain.textContent = LABEL_TANPA_SEKOLAH;
+      selectSekolah.appendChild(optLain);
+      selectSekolah.disabled = false;
+    }
+
+    selectSekolah.addEventListener('change', function() {
+      const chosen = this.value;
+      btnCek.disabled = true;
+      if (!chosen) { selectSiswa.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>'; selectSiswa.disabled = true; return; }
+      filteredSiswa = allPeserta.filter(i => String(i.sekolah || '').toUpperCase() === chosen.toUpperCase()).sort((a, b) => a.nama.localeCompare(b.nama));
+      selectSiswa.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>';
+      filteredSiswa.forEach((s, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx; opt.textContent = String(s.nama || '').toUpperCase();
+        selectSiswa.appendChild(opt);
+      });
+      selectSiswa.disabled = false;
+    });
+
+    selectSiswa.addEventListener('change', function() { btnCek.disabled = (this.value === ''); });
+
+    btnCek.addEventListener('click', function() {
+      const idx = selectSiswa.value;
+      if (idx === '') return;
+      const peserta = filteredSiswa[idx];
+      currentPeserta = peserta;
+      const lokasiRuang = peserta.lantai + ' — ' + peserta.ruang;
+
+      document.getElementById('resNama').textContent = peserta.nama;
+      document.getElementById('resSekolah').textContent = peserta.sekolah;
+      document.getElementById('resNoPeserta').textContent = peserta.noPeserta;
+      document.getElementById('resSesi').textContent = peserta.sesi;
+      document.getElementById('resJam').textContent = peserta.jam;
+      document.getElementById('resRuangan').textContent = lokasiRuang;
+      document.getElementById('qrTextLabel').textContent = peserta.noPeserta;
+
+      document.getElementById('cardNama').textContent = peserta.nama;
+      document.getElementById('cardSekolah').textContent = peserta.sekolah;
+      document.getElementById('cardSesiRuang').textContent = peserta.sesi + ' • ' + lokasiRuang;
+      document.getElementById('cardUsername').textContent = peserta.username || '-';
+      document.getElementById('cardPassword').textContent = peserta.password || '-';
+
+      tampilkanFotoRuangan(peserta);
+      document.getElementById('qrcode').innerHTML = QRGenerator.buildSVG(peserta.noPeserta);
+
+      searchSection.style.display = 'none';
+      resultSection.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('btnReset').addEventListener('click', function() {
+      currentPeserta = null;
+      selectSekolah.value = '';
+      selectSiswa.innerHTML = '<option value="">-- Pilih Nama Siswa --</option>';
+      selectSiswa.disabled = true;
+      btnCek.disabled = true;
+      resultSection.style.display = 'none';
+      searchSection.style.display = 'flex';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      initPromoSlider();
+    });
+
+    document.getElementById('btnPrint').addEventListener('click', function() { window.print(); });
+  </script>
 </body>
 </html>
