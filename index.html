@@ -688,6 +688,9 @@
 
   <script>
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzX4PEWtI7rPLbPHzPouvygDvWYwqNfJgXcA8mMnxsp_7lmcPVZowiLGVytwbT3GkkcrQ/exec';
+    const CACHE_STORAGE_KEY = 'tka_portal_cache_v1';
+    const CACHE_FRESH_MS = 10 * 60 * 1000;
+    const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
     let SERVER_INIT_DATA = {
       peserta: [],
@@ -857,17 +860,7 @@
       try { if (localStorage.getItem('tka_theme_mode') === 'dark') applyTheme(true); } catch (e) {}
     })();
 
-    function initLogoFromServer() {
-      const rawDarkSrc = SERVER_INIT_DATA.logoDataUri || SERVER_INIT_DATA.logoUrl || '';
-      const manualLightSrc = SERVER_INIT_DATA.logoLightDataUri || '';
-      if (!rawDarkSrc && !manualLightSrc) return;
-      logoDarkSrc = rawDarkSrc || manualLightSrc;
-      if (manualLightSrc) { logoLightSrc = manualLightSrc; updateStickyLogoByTheme(); }
-      else { buatVersiLogoModeTerang(logoDarkSrc).then(gen => { logoLightSrc = gen || logoDarkSrc; updateStickyLogoByTheme(); }); }
-      ensureLogoLoaded();
-    }
-
-function ensureLogoLoaded() {
+    function ensureLogoLoaded() {
       if (loadedLogoImage && loadedLogoImage.complete && loadedLogoImage.naturalWidth > 0) return;
       const dataUri = logoDarkSrc || SERVER_INIT_DATA.logoDataUri || SERVER_INIT_DATA.logoUrl;
       if (!dataUri) return;
@@ -883,6 +876,230 @@ function ensureLogoLoaded() {
         ? loadedLogoImage
         : null;
     }
+
+    function initLogoFromServer() {
+      const rawDarkSrc = SERVER_INIT_DATA.logoDataUri || SERVER_INIT_DATA.logoUrl || '';
+      const manualLightSrc = SERVER_INIT_DATA.logoLightDataUri || '';
+      if (!rawDarkSrc && !manualLightSrc) return;
+      logoDarkSrc = rawDarkSrc || manualLightSrc;
+      if (manualLightSrc) { logoLightSrc = manualLightSrc; updateStickyLogoByTheme(); }
+      else { buatVersiLogoModeTerang(logoDarkSrc).then(gen => { logoLightSrc = gen || logoDarkSrc; updateStickyLogoByTheme(); }); }
+      ensureLogoLoaded();
+    }
+
+    const baseRunningText = [
+      "Yuk persiapkan ujian lebih matang! <strong>Daftar Program Bimbingan Belajar Intensif TKA SD</strong> sekarang &amp; dapatkan diskon khusus peserta Try Out!",
+      "Ajak teman &amp; kerabatmu bergabung! Konsultasi gratis dan info pendaftaran silakan hubungi <strong>Panitia di Meja Informasi</strong>.",
+      "Klik tombol <strong>Unduh Kode QR</strong> &amp; <strong>Unduh Kartu Peserta</strong> agar tersimpan otomatis di galeri HP kamu."
+    ];
+
+    function initRunningText() {
+      const list = baseRunningText.slice();
+      if (SERVER_INIT_DATA && SERVER_INIT_DATA.promoTeks) list.unshift("<strong>" + SERVER_INIT_DATA.promoTeks + "</strong>");
+      const itemsHtml = list.map(t => `<span class="ticker-item"><span>${t}</span><span class="ticker-sep">&#10022;</span></span>`).join('');
+      document.getElementById('tickerTrack').innerHTML = itemsHtml + itemsHtml;
+      document.getElementById('midTickerTrack').innerHTML = itemsHtml + itemsHtml;
+    }
+
+    function salinTeks(elementId, btnEl) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const teks = el.textContent.trim();
+      if (!teks || teks === '-') return;
+      const originalHtml = btnEl.innerHTML;
+      const done = () => { btnEl.innerHTML = '&#10004;'; setTimeout(() => { btnEl.innerHTML = originalHtml; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(teks).then(done).catch(() => { fallbackSalin(teks); done(); }); }
+      else { fallbackSalin(teks); done(); }
+    }
+
+    function fallbackSalin(teks) {
+      const ta = document.createElement('textarea'); ta.value = teks; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    const QRGenerator = (function() {
+      const EXP = new Uint8Array(256), LOG = new Uint8Array(256);
+      let v = 1;
+      for (let i = 0; i < 255; i++) { EXP[i] = v; LOG[v] = i; v <<= 1; if (v & 256) v ^= 0x11d; }
+      EXP[255] = 1;
+      const gfMul = (a, b) => (a === 0 || b === 0) ? 0 : EXP[(LOG[a] + LOG[b]) % 255];
+      function getEC(data, ecCount) {
+        let poly = [1];
+        for (let i = 0; i < ecCount; i++) {
+          const next = new Array(poly.length + 1).fill(0);
+          for (let j = 0; j < poly.length; j++) { next[j] ^= poly[j]; next[j + 1] ^= gfMul(poly[j], EXP[i]); }
+          poly = next;
+        }
+        const rem = new Uint8Array(ecCount);
+        for (let i = 0; i < data.length; i++) {
+          const f = data[i] ^ rem[0];
+          for (let j = 0; j < ecCount - 1; j++) rem[j] = rem[j + 1] ^ gfMul(poly[j + 1], f);
+          rem[ecCount - 1] = gfMul(poly[ecCount], f);
+        }
+        return rem;
+      }
+      const VERSIONS = [null, { size: 21, totalData: 19, ec: 7, align: null }, { size: 25, totalData: 34, ec: 10, align: 18 }, { size: 29, totalData: 55, ec: 15, align: 22 }, { size: 33, totalData: 80, ec: 20, align: 26 }, { size: 37, totalData: 108, ec: 26, align: 30 }];
+      function getMatrix(text) {
+        const str = String(text || ''), bytes = [];
+        for (let i = 0; i < str.length; i++) bytes.push(str.charCodeAt(i) & 0xff);
+        let ver = 1;
+        while (ver <= 5 && bytes.length > VERSIONS[ver].totalData - 2) ver++;
+        if (ver > 5) ver = 5;
+        const cfg = VERSIONS[ver], size = cfg.size, bits = [];
+        const pushBits = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+        const maxLen = Math.min(bytes.length, cfg.totalData - 2);
+        pushBits(0b0100, 4); pushBits(maxLen, 8);
+        for (let i = 0; i < maxLen; i++) pushBits(bytes[i], 8);
+        pushBits(0, Math.min(4, cfg.totalData * 8 - bits.length));
+        while (bits.length % 8 !== 0) bits.push(0);
+        const dataCW = new Uint8Array(cfg.totalData);
+        for (let i = 0; i < bits.length / 8; i++) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i * 8 + j]; dataCW[i] = b; }
+        const pads = [0xec, 0x11];
+        for (let i = bits.length / 8, p = 0; i < cfg.totalData; i++, p++) dataCW[i] = pads[p % 2];
+        const ecCW = getEC(dataCW, cfg.ec), allCW = new Uint8Array(cfg.totalData + cfg.ec);
+        allCW.set(dataCW, 0); allCW.set(ecCW, cfg.totalData);
+        const mod = Array.from({ length: size }, () => new Uint8Array(size)), isFunc = Array.from({ length: size }, () => new Uint8Array(size));
+        const setMod = (c, r, val) => { if (c >= 0 && c < size && r >= 0 && r < size) { mod[r][c] = val ? 1 : 0; isFunc[r][c] = 1; } };
+        const placeFinder = (cx, cy) => {
+          for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+            const inO = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6, inI = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4, onB = dx === 0 || dx === 6 || dy === 0 || dy === 6;
+            setMod(cx + dx, cy + dy, inO && (onB || inI) ? 1 : 0);
+          }
+        };
+        placeFinder(0, 0); placeFinder(size - 7, 0); placeFinder(0, size - 7);
+        if (cfg.align !== null) {
+          const a = cfg.align;
+          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setMod(a + dx, a + dy, (Math.abs(dx) === 2 || Math.abs(dy) === 2 || (dx === 0 && dy === 0)) ? 1 : 0);
+        }
+        for (let i = 8; i < size - 8; i++) { setMod(i, 6, i % 2 === 0 ? 1 : 0); setMod(6, i, i % 2 === 0 ? 1 : 0); }
+        setMod(8, size - 8, 1);
+        const fmt1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+        const fmt2 = [[size-1,8],[size-2,8],[size-3,8],[size-4,8],[size-5,8],[size-6,8],[size-7,8],[size-8,8],[8,size-7],[8,size-6],[8,size-5],[8,size-4],[8,size-3],[8,size-2],[8,size-1]];
+        fmt1.forEach(([c, r]) => { isFunc[r][c] = 1; }); fmt2.forEach(([c, r]) => { isFunc[r][c] = 1; });
+        let bitIdx = 0, up = true;
+        for (let col = size - 1; col > 0; col -= 2) {
+          if (col === 6) col--;
+          for (let i = 0; i < size; i++) {
+            const r = up ? (size - 1 - i) : i;
+            for (let dx = 0; dx < 2; dx++) {
+              const c = col - dx;
+              if (!isFunc[r][c]) { mod[r][c] = bitIdx < allCW.length * 8 ? (allCW[bitIdx >> 3] >> (7 - (bitIdx & 7))) & 1 : 0; bitIdx++; }
+            }
+          }
+          up = !up;
+        }
+        const grid = mod.map((row, r) => row.map((val, c) => (!isFunc[r][c] && (r + c) % 2 === 0) ? (val ^ 1) : val));
+        const d = (1 << 3) | 0; let rem = d << 10;
+        for (let i = 14; i >= 10; i--) if ((rem >> i) & 1) rem ^= (0x537 << (i - 10));
+        const fmt = ((d << 10) | rem) ^ 0x5412;
+        for (let i = 0; i < 15; i++) { const bit = (fmt >> i) & 1; grid[fmt1[i][1]][fmt1[i][0]] = bit; grid[fmt2[i][1]][fmt2[i][0]] = bit; }
+        return { size, grid };
+      }
+      function buildSVG(text) {
+        const { size, grid } = getMatrix(text), q = 2, total = size + q * 2;
+        let pathD = '';
+        for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (grid[r][c]) pathD += `M${c + q} ${r + q}h1v1h-1z`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="156" height="156" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges"><rect width="${total}" height="${total}" fill="#ffffff"/><path d="${pathD}" fill="#0f172a"/></svg>`;
+      }
+      return { buildSVG, getMatrix };
+    })();
+
+    let daftarIklan = [], currentSlide = 0, slideTimer = null, touchStartX = 0, promoEventsBound = false;
+
+    function initPromoSlider() {
+      if (!daftarIklan || daftarIklan.length === 0) return;
+      currentSlide = 0;
+      const modal = document.getElementById('promoModal'), track = document.getElementById('promoTrack'), dots = document.getElementById('promoDots');
+      track.style.transform = 'translateX(0%)';
+      track.innerHTML = daftarIklan.map((item, idx) => `<div class="promo-slide" style="${item.link ? 'cursor:pointer;' : ''}" onclick="klikSlide(${idx})"><div class="promo-ig-frame"><img src="${item.gambar}" alt="Promo ${idx + 1}" decoding="async"></div></div>`).join('');
+      dots.innerHTML = daftarIklan.map((_, idx) => `<button type="button" class="promo-dot ${idx === 0 ? 'active' : ''}" onclick="keSlide(${idx})"></button>`).join('');
+      document.getElementById('btnPrevSlide').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+      document.getElementById('btnNextSlide').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+      if (!promoEventsBound) {
+        promoEventsBound = true;
+        track.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; if (slideTimer) clearInterval(slideTimer); }, { passive: true });
+        track.addEventListener('touchend', e => { const diff = touchStartX - e.changedTouches[0].screenX; if (Math.abs(diff) > 40) geserSlide(diff > 0 ? 1 : -1); mulaiAutoSlide(); }, { passive: true });
+      }
+      modal.style.display = 'flex';
+      mulaiAutoSlide();
+    }
+
+    function keSlide(index) {
+      const total = daftarIklan.length; currentSlide = (index + total) % total;
+      document.getElementById('promoTrack').style.transform = `translateX(-${currentSlide * 100}%)`;
+      document.querySelectorAll('#promoDots .promo-dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    }
+    function geserSlide(arah) { keSlide(currentSlide + arah); }
+    function klikSlide(idx) { if (daftarIklan[idx] && daftarIklan[idx].link) window.open(daftarIklan[idx].link, '_blank'); }
+    function mulaiAutoSlide() { if (daftarIklan.length <= 1) return; if (slideTimer) clearInterval(slideTimer); slideTimer = setInterval(() => geserSlide(1), 4500); }
+    function tutupIklan() { if (slideTimer) clearInterval(slideTimer); document.getElementById('promoModal').style.display = 'none'; }
+
+    let currentInlineSlide = 0, inlineSlideTimer = null, currentSearchInlineSlide = 0, searchInlineSlideTimer = null;
+
+    function initInlinePromoSlider() {
+      const hasIklan = daftarIklan && daftarIklan.length > 0;
+      const section = document.getElementById('inlinePromoSection');
+      if (!hasIklan) { if (section) section.style.display = 'none'; }
+      else if (section) {
+        section.style.display = 'block';
+        document.getElementById('inlinePromoTrack').innerHTML = daftarIklan.map((item, idx) => `<div class="promo-slide" onclick="klikSlide(${idx})"><div class="promo-ig-frame"><img src="${item.gambar}" alt="Promo ${idx + 1}" loading="lazy"></div></div>`).join('');
+        document.getElementById('inlinePromoDots').innerHTML = daftarIklan.map((_, idx) => `<button type="button" class="promo-dot ${idx === 0 ? 'active' : ''}" onclick="keInlineSlide(${idx})"></button>`).join('');
+        document.getElementById('btnPrevInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        document.getElementById('btnNextInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        if (inlineSlideTimer) clearInterval(inlineSlideTimer);
+        if (daftarIklan.length > 1) inlineSlideTimer = setInterval(() => geserInlineSlide(1), 4500);
+      }
+
+      const searchSectionPromo = document.getElementById('searchInlinePromoSection');
+      if (!hasIklan) { if (searchSectionPromo) searchSectionPromo.style.display = 'none'; }
+      else if (searchSectionPromo) {
+        searchSectionPromo.style.display = 'block';
+        document.getElementById('searchInlinePromoTrack').innerHTML = daftarIklan.map((item, idx) => `<div class="promo-slide" style="cursor:pointer;" onclick="initPromoSlider()"><div class="promo-ig-frame"><img src="${item.gambar}" alt="Poster ${idx + 1}" loading="lazy"></div></div>`).join('');
+        document.getElementById('searchInlinePromoDots').innerHTML = daftarIklan.map((_, idx) => `<button type="button" class="promo-dot ${idx === 0 ? 'active' : ''}" onclick="keSearchInlineSlide(${idx})"></button>`).join('');
+        document.getElementById('btnPrevSearchInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        document.getElementById('btnNextSearchInline').style.display = daftarIklan.length <= 1 ? 'none' : 'flex';
+        if (searchInlineSlideTimer) clearInterval(searchInlineSlideTimer);
+        if (daftarIklan.length > 1) searchInlineSlideTimer = setInterval(() => geserSearchInlineSlide(1), 4500);
+      }
+    }
+
+    function keInlineSlide(index) {
+      const total = daftarIklan.length; currentInlineSlide = (index + total) % total;
+      document.getElementById('inlinePromoTrack').style.transform = `translateX(-${currentInlineSlide * 100}%)`;
+      document.querySelectorAll('#inlinePromoDots .promo-dot').forEach((d, i) => d.classList.toggle('active', i === currentInlineSlide));
+    }
+    function geserInlineSlide(arah) { keInlineSlide(currentInlineSlide + arah); }
+    function keSearchInlineSlide(index) {
+      const total = daftarIklan.length; currentSearchInlineSlide = (index + total) % total;
+      document.getElementById('searchInlinePromoTrack').style.transform = `translateX(-${currentSearchInlineSlide * 100}%)`;
+      document.querySelectorAll('#searchInlinePromoDots .promo-dot').forEach((d, i) => d.classList.toggle('active', i === currentSearchInlineSlide));
+    }
+    function geserSearchInlineSlide(arah) { keSearchInlineSlide(currentSearchInlineSlide + arah); }
+
+    let activeRoomPhotoSrc = '', activeRoomCaption = '';
+    function tampilkanFotoRuangan(peserta) {
+      const frame = document.getElementById('roomPhotoFrame'), img = document.getElementById('roomPhotoImg'), ph = document.getElementById('roomPhotoPlaceholder'), zh = document.getElementById('roomPhotoZoomHint');
+      activeRoomPhotoSrc = (peserta && peserta.fotoRuang) ? peserta.fotoRuang : '';
+      activeRoomCaption = peserta.lantai + ' — ' + peserta.ruang;
+      if (activeRoomPhotoSrc) { img.src = activeRoomPhotoSrc; img.style.display = 'block'; ph.style.display = 'none'; zh.style.display = 'inline-flex'; frame.classList.add('has-photo'); }
+      else { gagalMuatFotoRuangan(); }
+    }
+    function gagalMuatFotoRuangan() {
+      activeRoomPhotoSrc = '';
+      document.getElementById('roomPhotoImg').style.display = 'none';
+      document.getElementById('roomPhotoPlaceholder').style.display = 'flex';
+      document.getElementById('roomPhotoZoomHint').style.display = 'none';
+      document.getElementById('roomPhotoFrame').classList.remove('has-photo');
+    }
+    function bukaFotoRuangan() {
+      if (!activeRoomPhotoSrc) return;
+      document.getElementById('roomPhotoModalImg').src = activeRoomPhotoSrc;
+      document.getElementById('roomPhotoModalCaption').textContent = activeRoomCaption;
+      document.getElementById('roomPhotoModal').style.display = 'flex';
+    }
+    function tutupFotoRuangan() { document.getElementById('roomPhotoModal').style.display = 'none'; }
 
     function roundRectPath(ctx, x, y, w, h, r) {
       ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -942,37 +1159,41 @@ function ensureLogoLoaded() {
     function triggerCanvasDownload(canvas, filename, titleLabel) {
       const isInAppBrowser = /Instagram|FBAN|FBAV|WhatsApp|Line|BytedanceWebview|wv/i.test(navigator.userAgent || '');
 
-      if (canvas.toBlob) {
-        canvas.toBlob(function(blob) {
-          if (!blob) {
-            tampilkanPreviewUnduhan(canvas.toDataURL('image/png'), filename, titleLabel);
-            return;
-          }
-          const blobUrl = URL.createObjectURL(blob);
+      try {
+        if (canvas.toBlob) {
+          canvas.toBlob(function(blob) {
+            if (!blob) {
+              tampilkanPreviewUnduhan(canvas.toDataURL('image/png'), filename, titleLabel);
+              return;
+            }
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            if (isInAppBrowser) {
+              tampilkanPreviewUnduhan(canvas.toDataURL('image/png'), filename, titleLabel);
+            }
+            setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 10000);
+          }, 'image/png');
+        } else {
+          const dataUrl = canvas.toDataURL('image/png');
           const link = document.createElement('a');
-          link.href = blobUrl;
+          link.href = dataUrl;
           link.download = filename;
-          link.style.display = 'none';
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-
           if (isInAppBrowser) {
-            tampilkanPreviewUnduhan(canvas.toDataURL('image/png'), filename, titleLabel);
+            tampilkanPreviewUnduhan(dataUrl, filename, titleLabel);
           }
-          setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 10000);
-        }, 'image/png');
-      } else {
-        const dataUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        if (isInAppBrowser) {
-          tampilkanPreviewUnduhan(dataUrl, filename, titleLabel);
         }
+      } catch (err) {
+        loadedLogoImage = null;
       }
     }
 
@@ -1077,28 +1298,116 @@ function ensureLogoLoaded() {
     const selectSiswa = document.getElementById('selectSiswa');
     const btnCek = document.getElementById('btnCek');
 
+    function simpanCacheBrowser(dataObj) {
+      try {
+        localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({
+          savedAt: Date.now(),
+          data: dataObj
+        }));
+      } catch (e) {
+        try {
+          const slimData = Object.assign({}, dataObj, {
+            logoDataUri: '',
+            logoLightDataUri: ''
+          });
+          localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({
+            savedAt: Date.now(),
+            data: slimData
+          }));
+        } catch (err) {}
+      }
+    }
+
+    function bacaCacheBrowser() {
+      try {
+        const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.data || !parsed.savedAt) return null;
+        if (Date.now() - parsed.savedAt > CACHE_MAX_AGE_MS) {
+          localStorage.removeItem(CACHE_STORAGE_KEY);
+          return null;
+        }
+        return parsed;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function terapkanDataPortal(res, dariCache) {
+      if (!res) return;
+      SERVER_INIT_DATA = Object.assign(SERVER_INIT_DATA, res);
+      initLogoFromServer();
+      initRunningText();
+
+      if (res.iklan && res.iklan.length > 0) {
+        const iklanBaruStr = JSON.stringify(res.iklan);
+        const iklanLamaStr = JSON.stringify(daftarIklan);
+        daftarIklan = res.iklan;
+        if (dariCache || iklanBaruStr !== iklanLamaStr) {
+          if (document.getElementById('promoModal').style.display !== 'flex') {
+            initPromoSlider();
+          }
+          initInlinePromoSlider();
+        }
+      }
+
+      if (Array.isArray(res.peserta)) {
+        const belumPilihSekolah = !selectSekolah.value;
+        allPeserta = res.peserta;
+        if (belumPilihSekolah) {
+          populateSekolah();
+        }
+      }
+    }
+
+    function fetchDenganRetry(url, percobaan) {
+      return fetch(url)
+        .then(function(response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        })
+        .catch(function(err) {
+          if (percobaan > 1) {
+            const jeda = (4 - percobaan) * 700 + Math.floor(Math.random() * 400);
+            return new Promise(function(resolve) {
+              setTimeout(resolve, jeda);
+            }).then(function() {
+              return fetchDenganRetry(url, percobaan - 1);
+            });
+          }
+          throw err;
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       initRunningText();
-      const apiUrl = GAS_API_URL + (GAS_API_URL.indexOf('?') === -1 ? '?mode=json' : '&mode=json');
 
-      fetch(apiUrl)
-        .then(function(response) { return response.json(); })
+      const forceRefresh = window.location.search.indexOf('refresh=1') !== -1;
+      const cached = bacaCacheBrowser();
+      let perluFetchServer = true;
+
+      if (cached && cached.data) {
+        terapkanDataPortal(cached.data, true);
+        if (!forceRefresh && (Date.now() - cached.savedAt < CACHE_FRESH_MS)) {
+          perluFetchServer = false;
+        }
+      }
+
+      if (!perluFetchServer) return;
+
+      const apiUrl = GAS_API_URL + (GAS_API_URL.indexOf('?') === -1 ? '?mode=json' : '&mode=json');
+      fetchDenganRetry(apiUrl, 3)
         .then(function(res) {
           if (res) {
-            SERVER_INIT_DATA = Object.assign(SERVER_INIT_DATA, res);
-            initLogoFromServer();
-            initRunningText();
-            if (res.iklan && res.iklan.length > 0) {
-              daftarIklan = res.iklan;
-              initPromoSlider();
-              initInlinePromoSlider();
-            }
-            allPeserta = res.peserta || [];
-            populateSekolah();
+            simpanCacheBrowser(res);
+            terapkanDataPortal(res, false);
           }
         })
         .catch(function() {
-          selectSekolah.innerHTML = '<option value="">Gagal memuat data (Periksa koneksi / link)</option>';
+          if (!cached || !cached.data) {
+            selectSekolah.innerHTML = '<option value="">Gagal memuat data (Muat ulang halaman)</option>';
+          }
         });
     });
 
